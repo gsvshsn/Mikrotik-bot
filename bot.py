@@ -4,6 +4,27 @@ import routeros_api
 import random
 import string
 from telebot import types
+from flask import Flask
+from threading import Thread
+
+# --- إعداد صفحة الويب الوهمية لتجاوز مشكلة ريندر ---
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Mikrotik Bot is Running Successfully!"
+
+def run():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# تشغيل الخادم الوهمي في الخلفية
+keep_alive()
+# --------------------------------------------------
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 MIKROTIK_IP = os.environ.get('MIKROTIK_IP')       
@@ -86,7 +107,7 @@ def handle_commands(message):
             bot.reply_to(message, "📝 أرسل اسم اليوزر المتصل حالياً لإخراجه وفصله فوراً:")
         elif message.text == "📉 استهلاك الشبكة الآن":
             interfaces = api.get_resource('/interface').get()
-            wan = interfaces['name']
+            wan = interfaces[0]['name'] if isinstance(interfaces, list) else interfaces['name']
             traffic = api.get_resource('/interface').call('monitor-traffic', {'interface': wan, 'once': True})
             rx = round(int(traffic['rx-bits-per-second']) / 1024 / 1024, 2)
             tx = round(int(traffic['tx-bits-per-second']) / 1024 / 1024, 2)
@@ -136,5 +157,5 @@ def kick_username(message):
             bot.reply_to(message, f"❌ المستخدم غير نشط أو غير متصل بالأساس ليتم فصله.")
     except Exception as e: bot.reply_to(message, f"❌ خطأ: {e}")
 
-if __name__ == "__main__":
-    bot.infinity_polling()
+# تشغيل البوت باستمرار
+bot.infinity_polling()
