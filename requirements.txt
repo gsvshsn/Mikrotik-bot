@@ -1,4 +1,2 @@
 pyTelegramBotAPI
-librouteros
-requests
-
+routeros-api
